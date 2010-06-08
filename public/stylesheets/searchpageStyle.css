@@ -1,0 +1,82 @@
+body {
+	font-family: Georgia, serif;
+}
+
+form {
+	width: 50em;
+	text-align: left;
+}
+
+input.initial_text_color {
+	color: #DDDDDD;
+}
+
+input.default_text_color {
+	color: #000000;
+}
+
+input#query {
+	font-family: Georgia, serif;
+	font-size: 24pt;
+	width: 25em;
+	border: 1px solid black;
+}
+
+div#optionContainer {
+	width: 40em;
+	border: 1px solid black;
+	background-color: #DDDDFF;
+	margin-top: 1em;
+	padding: 1em;
+	font-size: 10pt;
+}
+
+div#optionContainer div.option {
+	margin-bottom: .5em;
+}
+
+span.explanation {
+	display: none;
+}
+
+div#showHide {
+	margin-top: 1em;
+/*	cursor: hand;*/
+	cursor: pointer;
+}
+
+span.questionmark {
+	font-weight: bold;
+	text-decoration: underline;
+	cursor: help;
+}
+
+span.questionmark:hover {
+	color: #FF0000;
+}
+
+input.parse {
+	margin-left: 1em;
+}
+
+p.flashOutput {
+	color: green;
+}
+
+div#customOptions {
+	margin-top: 0;
+	margin-left: 3em;
+/*	cursor: hand;*/
+}
+
+div#customOptions.disabled {
+	color: #8D8D8D;
+}
+
+label {
+	cursor: pointer;
+}
+
+span.error {
+	color: green;
+}

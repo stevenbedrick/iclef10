@@ -1,0 +1,161 @@
+<% content_for :custom_header do %>
+    <script type="text/javascript" charset="utf-8">
+        var defaultFieldVal = "Enter query";
+
+        $(document).ready(function() { 
+          if ($('#query')[0].value != defaultFieldVal) {
+            $('#query')[0].className = 'default_text_color'; // to deal with the case of "back" butons- we don't want the  field
+          }
+
+        $('#query').focus(function() {
+          clearDefault();
+        });
+
+        $('input[name=queryPrecision]').click(function() {
+          // disable the custom checkboxes unless this is the custom query button:
+      
+          var disabledVal = true;
+      
+          if (this.value == 'p') {
+            enableCustom();
+          } else {
+            disableCustom();
+          }
+
+        });
+
+
+        $('input[name=outOp]').click(function() {
+          // disable the custom checkboxes unless this is the custom query button:
+      
+          var disabledVal = true;
+      
+          if (this.value == 'trec') {
+            enableCustomTrec();
+          } else {
+            disableCustomTrec();
+          }
+
+        });
+
+
+
+
+
+        // add onSubmit handler to disallow submission with defaultFieldVal:
+
+        $('form').submit(function() {
+      
+          var inputBox = $('#query')[0];
+      
+          if (inputBox.value == defaultFieldVal) {
+            inputBox.value = '';
+          }
+      
+        });
+
+        // deal with "back" button for custom query parser:
+        var checked_query_parser_val = $('[name=queryPrecision][checked]')[0].value;
+
+        if (checked_query_parser_val == 'p') {
+          enableCustom();
+        }
+        });
+
+      function enableCustom() {
+        $('#customOptions').removeClass('disabled');
+        $('#customOptions').children('input').removeAttr('disabled');
+      }
+
+      function disableCustom() {
+        $('#customOptions').addClass('disabled');
+        $('#customOptions').children('input').attr('disabled','disabled');
+      }
+
+
+        function enableCustomTrec() {
+        $('#trecOptions').removeClass('disabled');
+        $('#trecOptions').children('input').removeAttr('disabled');
+      }
+
+      function disableCustomTrec() {
+        $('#trecOptions').addClass('disabled');
+        $('#trecOptions').children('input').attr('disabled','disabled');
+      }
+
+
+
+      function clearDefault() {
+          theElement = $('#query')[0];
+          theElement.className = 'default_text_color';
+          if (theElement.value == defaultFieldVal) {
+            theElement.value = ''
+          }
+      }
+
+    </script>
+    
+    <style type="text/css" media="screen">
+      form { margin-top: 3em; }
+    </style>
+    
+<% end %>
+
+    <center>
+      <% form_tag( {:action => :search},  :multipart => true ) do %>
+      <input type="text" name="query_str" value="<%= (@query_str.nil? or @query_str.empty?) ? 'Enter query' : @query_str %>" id="query" class="initial_text_color" /> 
+      <input type="submit" /> 
+      <input type="hidden" name="newSearch" value="true" /> 
+      <% if flash[:notice] %>
+        <span class="error" id="flash_span"><%= flash[:notice] %></span> 
+      <% end %>
+      
+      <div id="optionContainer">
+        <div id="displayOptions" class="option">
+          Number of images to be retrieved:<br/>
+          <input type="radio" name="displayOp" value="a" id="disp_op_a" checked="true" /> <label for="disp_op_a">10</label> 
+          <input type="radio" name="displayOp" value="b" id="disp_op_b" /> <label for="disp_op_b">25</label> 
+          <input type="radio" name="displayOp" value="c" id="disp_op_c" /> <label for="disp_op_c">100</label> 
+          <input type="radio" name="displayOp" value="d" id="disp_op_d" /> <label for="disp_op_d">1000</label> 
+          <input type="radio" name="displayOp" value="e" id="disp_op_e" /> <label for="disp_op_e">All</label>
+        </div>
+        <div id="columnOptions" class="option">
+          Search:<br/>
+          <input type="radio" name="columnOp" value="a" id="col_op_a" /> <label for="col_op_a">Precise Captions</label> 
+          <input type="radio" name="columnOp" value="b" id="col_op_b" checked="true" /> <label for="col_op_b">Full Captions</label>
+        </div>
+        <div id="titleOptions" class="option">
+          <input type="checkbox" name="titleOp" value="t" id="title_op" /> <label for="title_op">Search titles also</label>
+        </div>
+        <div id="rsvpOptions" class="option">
+          <input type="checkbox" name="rsvp" value="t" id="rsvp_checkbox" /> <label for="rsvp_checkbox">RSVP Result View?</label>
+        </div>
+        <div id="parseOptions" class="option">
+          Query Parsing:<span class="questionMark" id="help_1">?</span><br/>
+          <input type="radio" name="queryPrecision" class="parse" value="e" id="exact" /><label for="exact">Exact Match</label><br/>
+          <input type="radio" name="queryPrecision" class="parse" value="a" id="bool_and" /><label for="bool_and">Boolean AND</label><br/>
+          <input type="radio" name="queryPrecision" class="parse" value="o" id="bool_or" /><label for="bool_or">Boolean OR</label><br/>
+          <input type="radio" name="queryPrecision" class="parse" value="f" id="fuzzy" /><label for="fuzzy">Fuzzy Matching</label><br/>
+          <input type="radio" name="queryPrecision" class="parse" value="p" id="custom" checked="true" /><label for="custom">Custom Query Parser</label>
+        </div>
+        <div id="customOptions" class="option disabled">
+          <input type="checkbox" name="limitModality" value="lm" disabled="true" id="custom_lm" checked="true" /> <label for="custom_lm">Modality</label><br/>
+          <input type="checkbox" name="umlsSynonym" value="umSy" disabled="true" id="custom_umSy" /> <label for="custom_umSy">UMLS Term synonym</label><br/>
+          <input type="checkbox" name="stem_and_star" value="stem" disabled="true" id="custom_stemStar" /> <label for="custom_stemStar">Stem and Star</label><br/>
+          <input type="checkbox" name="unique_term" value="stem" disabled="true" id="custom_unique" /> <label for="custom_unique">Unique search terms</label>
+        </div>
+        <div id="outputOptions" class="option">
+          Search Output:<br/>
+          <input type="radio" name="outOp" value="std" id="std" checked="true" /> <label for="std">Standard output</label><br/>
+          <input type="radio" name="outOp" value="trec" id="trec" /> <label for="trec">Trec_eval Format</label><br/>
+          <div id="trecOptions" class="option disabled">
+            Run Name: <input type="text" name="topicSetName" size="16"><br/>
+            <input type="radio" name="uploadFile" value="uplF" disabled="true" id="uplF" /> <label for="uplF">Upload File (one query per line):</label><br/>
+            <label for="file">File to Upload</label> <%= file_field_tag "file" %><br/>
+            <input type="radio" name="uploadFile" value="singleQ" disabled="true" id="singleQ" /> <label for="singleQ">Single Query</label><br/>
+            Topic number:<input type="text" name="topicNo" size="4" /><br/>
+          </div>
+        </div>
+      </div>
+      <% end %>
+    </center>

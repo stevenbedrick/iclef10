@@ -1,0 +1,41 @@
+<% content_for :custom_header do %>
+<style type="text/css" media="screen">
+  td.result {
+    text-align: left;
+    padding: 0.5em;
+  }
+  td.result a {
+    font-size: 9pt;
+  }
+  td.result img {
+    width: 125px;
+    border: 0px;
+  }
+</style>
+<% end %>
+
+Found <%= pluralize(@results.size, 'result') %>.
+
+<% if @results.size > 0 %>
+  
+  <table>
+    <% @results.each_slice(4) do |g| %>
+    <tr>
+      <% g.each do |r| %>
+      <td class="result">
+        <div style="text-align: center">
+          <a href="<%= url_for(:controller => :record, :action => :show, :id => r.id) %>" target="_blank">
+            <img src="<%= r.image_full_path %>"/>
+          </a>
+        </div>
+        <%= link_to r.title, {:controller => :record, :action => :show, :id => r.id}, {:target => "_blank"} %>
+      </td>
+      <% end %>
+    </tr>
+    <% end %>
+  </table>
+    
+  
+<% end %>
+
+<%= link_to 'New search', :action => :index %>
