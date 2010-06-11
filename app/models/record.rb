@@ -1,6 +1,9 @@
-require 'tempfile'
+require 'ruby-debug'
 
 class Record < ActiveRecord::Base
+
+  belongs_to :article, :class_name => "Article", :foreign_key => "pmid"
+  has_and_belongs_to_many :mesh_terms
 
   def Record.find_by_caption(q)
     
@@ -22,7 +25,7 @@ class Record < ActiveRecord::Base
   
   def metamap
     
-    mm_cmd = "/home/bedrick/mm/public_mm/bin/metamap09 -% "
+    mm_cmd = "/home/bedrick/mm/public_mm/bin/metamap09 -% noformat "
     
     # write caption to temp out file:
     tmpfile = Tempfile.new(self.id) # use this record id as base- should help avoid collisions
@@ -33,12 +36,65 @@ class Record < ActiveRecord::Base
     tmp_outfile = Tempfile.new(self.id.to_s + '_out')
     
     full_cmd = mm_cmd + tmpfile.path + ' ' + tmp_outfile.path
+    #puts full_cmd
     `#{full_cmd}`
     
     # read the mm output:
-    mm = mm_output_from_str(File.open(tmp_outfile.path).readlines.join)
+    raw_output = File.open(tmp_outfile.path).readlines.join
+    mm = mm_output_from_str(raw_output)
+    
+    # clean up files:
+    File.unlink(tmpfile.path)
+    File.unlink(tmp_outfile.path)
     
     return mm
+  end
+
+  def load
+    
+    mappings = self.metamap
+    #puts mappings
+    # mm returns semantic type abbreviations. If a mapping isn't in this whitelist, we don't care about it:
+    abbrev_whitelist = [
+      'dsyn',
+      'neop',
+      'neop',
+      'patf',
+      'cgab',
+      'anab',
+      'bpoc',
+      'blor',
+      'acab',
+      'diap',
+      'cell',
+      'spco',
+      'inpo'
+    ]
+    
+    chosen = []
+
+    mappings.each do |m|
+      mapped_concepts = m[:mappings]
+      mapped_concepts.each do |mc|
+        valid = false
+        mc[:semantic_types].each do |st|
+          valid = true if abbrev_whitelist.include? st
+        end
+        chosen << mc[:cui] if valid
+      end
+    end
+    
+    # use http://skynet.ohsu.edu/meshtrans/mesh_mh_by_cui to map each cui to its mesh major heading
+    main_headings = resolve_main_headings(chosen)
+
+    # store in database somewhere...
+    main_headings.each do |mh|
+      m = MeshTerm.find_or_create_by_term(mh[:str])
+      self.mesh_terms << m
+    end
+    
+    self.save
+    
   end
   
   private
@@ -75,7 +131,7 @@ class Record < ActiveRecord::Base
           t = []
           if sem_types.size > 0
             sem_types.each do |st|
-              t << types[st.text]
+              t << st.text
             end
           end
 
@@ -89,6 +145,40 @@ class Record < ActiveRecord::Base
       to_return << this_phrase
     end # ends phrases
     return to_return
+  end
+  
+  def resolve_main_headings(cui_list)
+    
+    # use http://skynet.ohsu.edu/meshtrans/mesh_mh_by_cui to map each cui to its mesh major heading
+    mh_url = "http://skynet.ohsu.edu/meshtrans/mesh_mh_by_cui"
+    hydra = Typhoeus::Hydra.new
+    
+    main_headings = []
+    
+    cui_list.uniq.each do |c|
+      # set up a request:
+      this_req = Typhoeus::Request.new(mh_url, :method => :get, :params => {:cui => c})
+      this_req.on_complete do |resp|
+        begin
+          r = JSON.parse(resp.body)
+          if r['str']
+            main_headings << {:cui => c, :str => r['str']}
+          end
+        rescue # json parsing error of some sort- shouldn't happen...
+          next
+        end
+      end
+      hydra.queue(this_req)
+    end
+    
+    hydra.run
+    
+#    main_headings.each do |mh|
+#      puts "#{mh[:cui]}\t\t#{mh[:str]}"
+#    end
+
+    return main_headings
+    
   end
   
 end
