@@ -22,6 +22,7 @@ Rails::Initializer.run do |config|
 
 #  config.gem 'ferret' # even though we're not using it for searching, it's still helpful for stop-word removal
 #  require 'lib/umls'
+  config.gem 'nokogiri'
   require 'lib/tagger'
   TAGGER = Tagger.new
 
