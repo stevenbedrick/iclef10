@@ -2,7 +2,7 @@ require 'ruby-debug'
 
 class Record < ActiveRecord::Base
 
-  belongs_to :article, :class_name => "Article", :foreign_key => "pmid"
+  belongs_to :article, :class_name => "Article", :foreign_key => "pmid", :primary_key => 'pmid'
   has_and_belongs_to_many :mesh_terms
 
   def Record.find_by_caption(q)
@@ -23,8 +23,13 @@ class Record < ActiveRecord::Base
     "http://skynet.ohsu.edu/iclef10_data/#{self.figure_id}.jpg"
   end
   
-  def metamap(only_msh = false)
-    
+  def image_thumbnail_path
+    "http://skynet.ohsu.edu/iclef10_thumbnails/#{self.figure_id}_thumb.jpg"
+  end
+  
+  
+
+  def metamap(only_msh = false)    
     mm_cmd = "/home/bedrick/mm/public_mm/bin/metamap09 -% noformat "
     if only_msh
       mm_cmd << "-R MSH "
