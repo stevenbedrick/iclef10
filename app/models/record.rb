@@ -23,9 +23,12 @@ class Record < ActiveRecord::Base
     "http://skynet.ohsu.edu/iclef10_data/#{self.figure_id}.jpg"
   end
   
-  def metamap
+  def metamap(only_msh = false)
     
     mm_cmd = "/home/bedrick/mm/public_mm/bin/metamap09 -% noformat "
+    if only_msh
+      mm_cmd << "-R MSH "
+    end
     
     # write caption to temp out file:
     tmpfile = Tempfile.new(self.id) # use this record id as base- should help avoid collisions
@@ -52,7 +55,7 @@ class Record < ActiveRecord::Base
 
   def load
     
-    mappings = self.metamap
+    mappings = self.metamap(true) # only metamap to MeSH
     #puts mappings
     # mm returns semantic type abbreviations. If a mapping isn't in this whitelist, we don't care about it:
     abbrev_whitelist = [
@@ -94,6 +97,11 @@ class Record < ActiveRecord::Base
     end
     
     self.save
+    
+    if chosen.size > 0
+#      Debugger.start
+#      debugger
+    end
     
     return {:orig => chosen, :mh => main_headings}
     
