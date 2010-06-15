@@ -7,3 +7,31 @@
 <p>
   <%= @r.caption %>
 </p>
+
+<h3>MeSH Data:</h3>
+
+
+<% if @r.article.present? %>
+From original article (pmid <%= @r.pmid %>):
+<ul>
+<% @r.article.assigned_mesh_terms.each do |mt| %>
+  <li><%= mt.term %></lit>
+<% end %>
+</ul>
+
+<% else %>
+<em>No originating article! PMID was: ---&gt;<%= @r.pmid %>&lt;----</em>  
+<% end %>
+
+<p/>
+
+<% if @r.mesh_terms.present? %>
+From MetaMap on caption:
+<ul>
+<% @r.mesh_terms.each do |mt| %>
+  <li><%= mt.term %></li>
+<% end %>
+</ul>
+<% else %>
+<em>Nothing from MetaMap on caption!</em>
+<% end %>
