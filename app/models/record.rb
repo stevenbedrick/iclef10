@@ -95,7 +95,7 @@ class Record < ActiveRecord::Base
     
     self.save
     
-    return [:orig => chosen, :mh => main_headings]
+    return {:orig => chosen, :mh => main_headings}
     
   end
   
