@@ -113,10 +113,10 @@ class Record < ActiveRecord::Base
   end
   
   private
-  def mm_output_from_str(xml)
+  def mm_output_from_str(xml_str)
     to_return = []
 
-    n = Nokogiri::XML(xml)
+    n = Nokogiri::XML(xml_str)
 
     mapped_phrases = n / '/MMOlist/MMO/Utterances/Utterance/Phrases/Phrase[Mappings[@Count!="0"]]'
     mapped_phrases.each do |phrase|
