@@ -11,7 +11,7 @@
           clearDefault();
         });
 
-        $('input[name=queryPrecision]').click(function() {
+        $('input[name=parseMode]').click(function() {
           // disable the custom checkboxes unless this is the custom query button:
       
           var disabledVal = true;
@@ -37,6 +37,21 @@
           }
 
         });
+        
+        $('input[name=pm_mh]').click(function() {
+          // disable the custom pubmed mesh heading controls unless pm_mh is checked:
+          var disabledVal = true;
+          if ($('input[name=pm_mh]').is(':checked')) {
+            
+            $('#major_opts').removeClass('disabled')
+            $('#major_opts').children('input').removeAttr('disabled');
+            $('#pm_major_t').attr('checked',true);
+            
+          } else {
+            $('#major_opts').addClass('disabled');
+            $('#major_opts').children('input').attr('disabled','disabled');
+          }
+        });
 
 
 
@@ -55,7 +70,7 @@
         });
 
         // deal with "back" button for custom query parser:
-        var checked_query_parser_val = $('[name=queryPrecision][checked]')[0].value;
+        var checked_query_parser_val = $('[name=parseMode][checked]')[0].value;
 
         if (checked_query_parser_val == 'p') {
           enableCustom();
@@ -97,6 +112,9 @@
     
     <style type="text/css" media="screen">
       form { margin-top: 3em; }
+      div#major_opts {
+        margin-left: 2em;
+      }
     </style>
     
 <% end %>
@@ -130,13 +148,23 @@
         <div id="rsvpOptions" class="option">
           <input type="checkbox" name="rsvp" value="t" id="rsvp_checkbox" /> <label for="rsvp_checkbox">RSVP Result View?</label>
         </div>
+        
+        <div id="mh_opts" class="option">
+          <input type="checkbox" name="mm_mh" value="t" id="mm_mh"/><label for="mm_mh">Include MetaMap-derived MeSH terms?</label><br/>
+          <input type="checkbox" name="pm_mh" value="t" id="pm_mh"/><label for="pm_mh">Include PubMed MeSH terms?</label>
+          <div id="major_opts" class="option disabled">
+            <input type="radio" name="pm_major" value="t" id="pm_major_t" disabled="disabled"><label for="pm_major_t">Restrict to major topics</label><br/>
+            <input type="radio" name="pm_major" value="f" id="pm_major_f" disabled="disabled"><label for="pm_major_f">Use all MeSH terms</label>
+          </div>
+        </div>
+        
         <div id="parseOptions" class="option">
           Query Parsing:<span class="questionMark" id="help_1">?</span><br/>
-          <input type="radio" name="queryPrecision" class="parse" value="e" id="exact" /><label for="exact">Exact Match</label><br/>
-          <input type="radio" name="queryPrecision" class="parse" value="a" id="bool_and" /><label for="bool_and">Boolean AND</label><br/>
-          <input type="radio" name="queryPrecision" class="parse" value="o" id="bool_or" /><label for="bool_or">Boolean OR</label><br/>
-          <input type="radio" name="queryPrecision" class="parse" value="f" id="fuzzy" /><label for="fuzzy">Fuzzy Matching</label><br/>
-          <input type="radio" name="queryPrecision" class="parse" value="p" id="custom" checked="true" /><label for="custom">Custom Query Parser</label>
+          <input type="radio" name="parseMode" class="parse" value="e" id="exact" /><label for="exact">Exact Match</label><br/>
+          <input type="radio" name="parseMode" class="parse" value="a" id="bool_and" /><label for="bool_and">Boolean AND</label><br/>
+          <input type="radio" name="parseMode" class="parse" value="o" id="bool_or" /><label for="bool_or">Boolean OR</label><br/>
+          <input type="radio" name="parseMode" class="parse" value="f" id="fuzzy" /><label for="fuzzy">Fuzzy Matching</label><br/>
+          <input type="radio" name="parseMode" class="parse" value="p" id="custom" checked="true" /><label for="custom">Custom Query Parser</label>
         </div>
         <div id="customOptions" class="option disabled">
           <input type="checkbox" name="limitModality" value="lm" disabled="true" id="custom_lm" checked="true" /> <label for="custom_lm">Modality</label><br/>

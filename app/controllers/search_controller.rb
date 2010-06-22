@@ -44,8 +44,15 @@ class SearchController < ApplicationController
     @umlsSynonym=(params['umlsSynonym']) # use UMLS query expansion?
     @columnOp=(params['columnOp']) # which caption column to use?
     @titleOp=(params['titleOp']) # include titles, or just captions?
+    @umls = params[:umlsSynonym]
     @stem_and_star = params[:stem_and_star] # stem and wildcard query terms?
     @unique = params[:unique_term] # only include unique terms after stemming/expansion?
+    @parse_mode = params[:parseMode]
+      
+    # include mesh?
+    @inc_mm_mh = params[:mm_mh]
+    @inc_pm_mh = params[:pm_mh]
+    @pm_major = params[:pm_major]
     
     # we're done getting raw parameters from query params, now let's do useful stuff with them:
     
@@ -57,7 +64,11 @@ class SearchController < ApplicationController
       :column_to_use => 'caption',
       :stem_and_star => @stem_and_star,
       :unique_terms => @unique,
-      :add_title => false
+      :add_title => false,
+      :pubmed_mh => false,
+      :pubmed_mh_major => false,
+      :metamap_mh => false
+      
     }
      
     # what col to use?
@@ -67,6 +78,44 @@ class SearchController < ApplicationController
       else 'b'
         parse_config_options[:column_to_use] = 'parsed_caption'
     end # ends case @columnOp
+
+    # which parse mode? choices are [:simple_and (a), :simple_or (o), :exact_match (e), :custom (p)]
+    case @parse_mode
+    when 'a'
+      parse_config_options[:parse_mode] = :simple_and
+    when 'o'
+      parse_config_options[:parse_mode] = :simple_or
+    when 'e'
+      parse_config_options[:parse_mode] = :exact_match
+    else
+      parse_config_options[:parse_mode] = :custom
+    end
+    
+    # include titles?
+    if @titleOp == 't'
+      parse_config_options[:add_title] = true
+    end
+    
+    # umls?
+    if @umls == 'umSy'
+      parse_config_options[:umls_synonym_expansion] = true
+    end
+    
+    # mesh?
+    if @inc_mm_mh == 't'
+      parse_config_options[:metamap_mh] = true
+    end
+    if @inc_pm_mh == 't'
+      parse_config_options[:pubmed_mh] = true
+      if @pm_major == 't'
+        parse_config_options[:pubmed_mh_major] = true
+      end
+    end
+    
+    # stemming?
+    if @stem_and_star == 'true'
+      parse_config_options[:stem_and_star]= true
+    end
     
     ##### output mode:
     ##### we can output results as either standard web view or as a TREC-formatted run file
@@ -106,8 +155,18 @@ class SearchController < ApplicationController
   
   private
   def run_query(q, parse_opts)    
-    # for now:
-    return Record.find_by_caption(q)    
+
+    #return Record.find_by_caption(q)    
+
+    qp = QueryParser.new
+    
+    # for now: hard-code column to 'caption'
+    parse_opts[:column_to_use] = 'caption'
+    
+    full_query, modalities, synonyms, q = qp.parse(q,parse_opts)
+    Rails.logger.info("full_query: #{full_query}")
+    return Record.find_by_sql(full_query)
+    
   end
   
   def gen_trec(results, topic_number, run_name, include_header = true)
