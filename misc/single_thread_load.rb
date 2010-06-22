@@ -8,45 +8,38 @@ base_url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&r
 
 pmid_list = ActiveRecord::Base.connection.select_values('select distinct pmid from records where pmid is not null and pmid > 0 and pmid not in (select pmid from articles)')
 
-puts "about to try and get #{pmid.size} articles"
+puts "about to try and get #{pmid_list.size} articles"
 
-hydra = Typhoeus::Hydra.new(:max_concurrency => 3)
+count = 0
 
-outlog = File.open('fetch_pmid.out','w')
-
-pmid_list.each_slice(20) do |s|
+pmid_list.each do |pm|
   
-  to_fetch = base_url + s.join(',')
-  
-  this_request = Typhoeus::Request.new(base_url + s.join(','))
-  this_request.on_complete do |response|
-    
-    # dump the body somewhere:
-    temp_out = File.open('./pm_out/' + s.join('_') + '.xml','w')
-    temp_out.puts response.body
-    temp_out.close
-    
-    
+  puts "on pmid: #{pm} (#{count}/#{pmid_list.size})"
+  count += 1
+  begin
+    response = Typhoeus::Request.get(base_url + pm)
+    puts base_url + pm
     # parse out the response:
     n = Nokogiri::XML(response.body)
     articles = n / "/PubmedArticleSet/PubmedArticle"
-    
+
     articles.each do |a|
-      
+
       # first things first; get the pmid:
       pmid_node = (a / "MedlineCitation/PMID")
       pmid = pmid_node.text
-      
+#      puts "got pmid: #{pmid}"
+
       title_node = (a / "MedlineCitation/Article/ArticleTitle")
       title = title_node.text
-#      puts title
-      
+        puts title
+
       abstract_node = (a / "MedlineCitation/Article/Abstract/AbstractText")
       abstract = nil
       if not abstract_node.empty?
         abstract = abstract_node.text
       end
-      
+
       # mesh terms:
       heading_list = (a / "MedlineCitation/MeshHeadingList/MeshHeading")
       headings = []
@@ -61,30 +54,29 @@ pmid_list.each_slice(20) do |s|
           headings << this_heading
         end # ends for each heading
       end # ends if headings
-#      puts "headings: " + headings.join('; ')
+  #      puts "headings: " + headings.join('; ')
+
       
       a = Article.new
       a.pmid = pmid
       a.title = title
       a.abstract = abstract
       
+      puts "About to save \"#{a.title}\" (pmid: #{a.pmid})"
+      
+      #a.save
+
       headings.each do |h|
         am = AssignedMeshTerm.new(:article => a, :mesh_term => MeshTerm.find_or_create_by_term(h[:descriptor]))
         am.major_topic = h[:major_topic]
-        am.save
+        #am.save
       end
       
-    end # ends each article
-    
-    outlog.puts("Another 20 down...")
-    outlog.flush
-  end # ends on_complete
+
+    end # ends each article node 
+  rescue Exception => e
+    puts "couldn't get pmid: #{pm}: #{e.message}"
+  end
   
-  hydra.queue this_request
-  
-end
+end # ends each pmid
 
-
-hydra.run
-
-outlog.close
