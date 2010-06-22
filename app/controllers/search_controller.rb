@@ -165,6 +165,8 @@ class SearchController < ApplicationController
     
     full_query, modalities, synonyms, q = qp.parse(q,parse_opts)
     Rails.logger.info("full_query: #{full_query}")
+    Rails.logger.info("modalities are: #{modalities.join(', ')}")
+    Rails.logger.info("synonyms are: #{synonyms.join(', ')}")
     return Record.find_by_sql(full_query)
     
   end
