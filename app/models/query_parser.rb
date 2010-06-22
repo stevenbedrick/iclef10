@@ -271,6 +271,8 @@ class QueryParser
     if options[:umls_synonym_expansion]
       
       synonyms = UmlsUtilities.findSynonymsExtended(query_tokens.join(' '))
+      synonyms = [synonyms] unless synonyms.is_a? Array
+      
       if synonyms
         # get rid of parentheses:
         cleaned_synonyms = synonyms.collect { |s| s.gsub(/\(|\)/,'')}
