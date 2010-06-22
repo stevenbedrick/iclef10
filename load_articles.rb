@@ -6,13 +6,15 @@ require 'enumerator'
 
 base_url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&retmode=xml&email=bedricks%40ohsu.edu&id="
 
-pmid = ActiveRecord::Base.connection.select_values('select distinct pmid from records where pmid is not null and pmid > 0')
+pmid_list = ActiveRecord::Base.connection.select_values('select distinct pmid from records where pmid is not null and pmid > 0 and pmid not in (select pmid from articles)')
 
-hydra = Typhoeus::Hydra.new(:max_concurrency => 5)
+puts "about to try and get #{pmid.size} articles"
+
+hydra = Typhoeus::Hydra.new(:max_concurrency => 3)
 
 outlog = File.open('fetch_pmid.out','w')
 
-pmid.each_slice(20) do |s|
+pmid_list.each_slice(20) do |s|
   
   to_fetch = base_url + s.join(',')
   
@@ -30,6 +32,10 @@ pmid.each_slice(20) do |s|
     articles = n / "/PubmedArticleSet/PubmedArticle"
     
     articles.each do |a|
+      
+      # first things first; get the pmid:
+      pmid_node = (a / "MedlineCitation/PMID")
+      pmid = pmid_node.text
       
       title_node = (a / "MedlineCitation/Article/ArticleTitle")
       title = title_node.text
@@ -58,6 +64,7 @@ pmid.each_slice(20) do |s|
 #      puts "headings: " + headings.join('; ')
       
       a = Article.new
+      a.pmid = pmid
       a.title = title
       a.abstract = abstract
       
