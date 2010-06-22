@@ -75,7 +75,7 @@ class UmlsUtilities
 
 
 def self.findSynonymsExtended(phrase)
-		bestNgram=UMLSutilities.findBestNgram(phrase) 
+		bestNgram=UmlsUtilities.findBestNgram(phrase) 
     synonyms=[]
    # r=/\(.*\)/
    syn=nil

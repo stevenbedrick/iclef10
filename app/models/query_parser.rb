@@ -1,8 +1,6 @@
 require 'ferret'
-include Ferret
 
-# this class's job is to put together a set of WHERE clauses for use in an SQL query
-# using PostgreSQL's tsearch syntax.
+# this class's job is to put together an SQL query that uses PostgreSQL's tsearch syntax.
 
 class QueryParser
   @parse_modes = [:exact_match, :simple_or, :simple_and, :fuzzy_or, :custom]
@@ -20,13 +18,18 @@ class QueryParser
       :column_to_use => 'parsed_caption',
       :stem_and_star => false,
       :unique_terms => false,
-      :add_title =>false
+      :add_title => false,
+      :pubmed_mh => false,
+      :pubmed_mh_major => false,
+      :metamap_mh => false
     }
 
     config_options.merge!(options)
 
     modalities = []
     synonyms = []
+
+    Rails.logger.info "config_options[:parse_mode]: #{config_options[:parse_mode]}"
 
     # q will end up a hash with two items: :tokens and :concat
     case config_options[:parse_mode]
@@ -50,23 +53,50 @@ class QueryParser
     end
     
     
-    joined_query = q[:tokens].collect { |t| sql_escape(t) }.join(' ' + q[:concat] + ' ')
+#    joined_query = q[:tokens].collect { |t| sql_escape(t) }.join(' ' + q[:concat] + ' ')
+
     
     # example: to_tsvector('english',title) @@ to_tsquery('english', 'monkeys & liver' )
-    query_parts = ["to_tsvector('english',#{config_options[:column_to_use]}) @@ to_tsquery('english','#{joined_query}')"]
-
+    
+    # figure out cols:
+    col = config_options[:column_to_use]
     if config_options[:add_title]
-      query_parts << " or to_tsvector('english', title) @@ to_tsquery('english',#{joined_query})"
+      col = col + ' || title'
     end
+    
+    if config_options[:pubmed_mh] 
+      if config_options[:pubmed_mh_major]
+        col = col + ' || pubmed_mh_major'
+      else
+        col = col + ' || pubmed_mh'
+      end
+    end
+    
+    if config_options[:metamap_mh]
+      col = col + ' || metamap_mh'
+    end
+    
 
+    
+    query_str = "to_tsvector('english',#{col}) @@ to_tsquery('english','#{q}')"
+    rank_str = "ts_rank_cd(to_tsvector(#{col}), to_tsquery('#{q}'))"
+
+
+    mod_limit = ''
     if config_options[:limit_modality] and not modalities.empty?
       # wrap in single-quotes:
       wrapped_modalities = modalities.select { |m| not m.strip.empty? }.collect { |m| sql_escape(m) }.collect { |m| "'#{m}'"}
-      mod_limit = "and visual_modality in (#{wrapped_modalities.join(', ')})"
-      query_parts << mod_limit
+      mod_limit = "and visual_modality in (#{wrapped_modalities.join(', ')})"      
     end
     
-    full_query = query_parts.join(' ')
+    full_query = "select r.*, #{rank_str} as rank from records r where #{query_str} "
+    if not mod_limit.blank?
+      full_query << mod_limit
+    end
+    full_query << "order by rank desc"
+    
+        
+#    full_query = query_parts.join(' ')
     
     return full_query, modalities, synonyms, q
 
@@ -80,13 +110,13 @@ class QueryParser
 
   def simple_or(query)
     
-    return {:tokens => query.split(/ /), :concat => '|'}
+    return query.split(/ /).join(' | ')
 
   end
 
   def simple_and(query)
 
-    return {:tokens => query.split(/ /), :concat => '&'}
+    return query.split(/ /).join(' & ')
 
   end
 
@@ -207,7 +237,10 @@ class QueryParser
 
     stop_word_removed_tokens = remove_stop_words(query.downcase, false) # passing in false to get back an array of tokens
     
+    Rails.logger.info('stop_word_removed_tokens: ' + stop_word_removed_tokens.join(', '))
+    
     query_tokens = []
+    
 
     if options[:limit_modality]
       # remove modality tokens from query- we'll handle those separately
@@ -228,7 +261,11 @@ class QueryParser
       query_tokens = modTerms
     end
 
+    Rails.logger.info('query_tokens: ' + query_tokens.join(', '))
+
     modalities = modalities.flatten.uniq
+
+    final_sym_list = []
 
     # do we want to worry about synonyms?
     if options[:umls_synonym_expansion]
@@ -237,23 +274,51 @@ class QueryParser
       if synonyms
         # get rid of parentheses:
         cleaned_synonyms = synonyms.collect { |s| s.gsub(/\(|\)/,'')}
-        query_tokens = query_tokens + cleaned_synonyms.collect { |s| remove_stop_words(s) }
+        final_sym_list = cleaned_synonyms.collect { |s| remove_stop_words(s) }
+#        query_tokens = query_tokens + cleaned_synonyms.collect { |s| remove_stop_words(s) }
       end
       
     end
     
+    Rails.logger.info('final_sym_list: ' + final_sym_list.join(', '));
+    
     if options[:uniq_terms]
       query_tokens = query_tokens.uniq
+      final_sym_list = final_sym_list.uniq
+      Rails.logger.info('in uniq_terms:')
+      Rails.logger.info("\t" + 'query_tokens: ' + query_tokens.join(', '))
+      Rails.logger.info("\t" + 'final_sym_list: ' + final_sym_list.join(', '));
     end
     
     # now we've got tokens, and, possibly, synonyms, and they've been uniqued if necessary. Stemming, anybody?
     # the way stemming/wildcard syntax works in tsearch is like so: photography -> photograph:*
 
     if options[:stem_and_star]
-      query_tokens = query_tokens.collect { |part| GhettoStemmer.stemword(part) } 
+      query_tokens = query_tokens.collect { |part| GhettoStemmer.stemword(part, false) + ':*' } 
+      final_sym_list = final_sym_list.collect { |s| s.collect { |t| GhettoStemmer.stemword(t, false) + ':*' } }
+      Rails.logger.info('in stem_and_star:')
+      Rails.logger.info("\t" + 'query_tokens: ' + query_tokens.join(', '))
+      Rails.logger.info("\t" + 'final_sym_list: ' + final_sym_list.join(', '));
+
     end
     
-    temp_query = {:tokens => query_tokens, :concat => '|'}
+    #recompose the query:
+    
+    orig_query = "(" + query_tokens.join(' & ') + ")"
+    Rails.logger.info("orig_query: #{orig_query}")
+    if final_sym_list.size > 0
+      
+      sym_query = "(" + final_sym_list.collect { |s| "("+ s.split.join(' & ') + ")"}.join(' | ') + ")"
+    else
+      sym_query = ""
+    end
+ 
+    temp_query = orig_query
+    if not sym_query.blank?
+      temp_query << " | " + sym_query
+    end
+    
+#    temp_query = {:tokens => query_tokens, :concat => '|'}
     
     return temp_query, modalities, synonyms
 
@@ -261,11 +326,12 @@ class QueryParser
 
   def remove_stop_words(str,join=true)
 
-    stop_words = Analysis::ENGLISH_STOP_WORDS
+    stop_words = Ferret::Analysis::ENGLISH_STOP_WORDS
     new_stop_words = ['including', 'show', 'me' ,'images' ,'cases','containing', 'showing', 'with', 'one', 'more', 'several', 'entire','full-body', 'colored', 'all', 'modalities'] # added jkc
+    new_stop_words << 'scan' # added sdb
     final_stop_words = stop_words + new_stop_words
 
-    tk = Analysis::StandardTokenizer.new(str.downcase)
+    tk = Ferret::Analysis::StandardTokenizer.new(str.downcase)
     stTk = Ferret::Analysis::StopFilter.new(tk, final_stop_words)
 
     out = []
