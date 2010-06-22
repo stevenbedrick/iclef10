@@ -11,11 +11,42 @@
     width: 125px;
     border: 0px;
   }
+  
+  div#query_details {
+    border: 1px dotted #7E7E7E;
+    font-size: 10pt ;
+    padding: .25em;
+    margin: .25em;
+    display: none;
+  }
+  
 </style>
+
+<script type="text/javascript" charset="utf-8">
+    $(document).ready(function (ev) {
+      $('#detail_link').click(function() {
+        $('#query_details').toggle();
+      })
+    });
+</script>
+
 <% end %>
 
-Found <%= pluralize(@results.size, 'result') %>.
+Found <%= pluralize(@results.size, 'result') %>. (<%= link_to 'New search', :action => :index %>)<br/>
+<a href="#" id="detail_link">details</a>
+<div id="query_details">
+  Modalities: <%= @mod_list.join(', ') %><br/>
+  Synonyms: <%= @syn_list.join(', ') %><br/>
+  Parsing Options:
+  <ul>
+    <% @opts.each do |k,v| %>
+    <li><%= k %>: <%= v %></li>
+    <% end %>
+  </ul>
+</div>
 
+<p/>
+  
 <% if @results.size > 0 %>
   
   <table>

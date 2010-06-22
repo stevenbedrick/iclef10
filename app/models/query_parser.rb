@@ -86,7 +86,7 @@ class QueryParser
     if config_options[:limit_modality] and not modalities.empty?
       # wrap in single-quotes:
       wrapped_modalities = modalities.select { |m| not m.strip.empty? }.collect { |m| sql_escape(m) }.collect { |m| "'#{m}'"}
-      mod_limit = "and visual_modality in (#{wrapped_modalities.join(', ')})"      
+      mod_limit = "and text_modality in (#{wrapped_modalities.join(', ')})"      
     end
     
     full_query = "select r.*, #{rank_str} as rank from records r where #{query_str} "
@@ -279,7 +279,8 @@ class QueryParser
         final_sym_list = cleaned_synonyms.collect { |s| remove_stop_words(s) }
 #        query_tokens = query_tokens + cleaned_synonyms.collect { |s| remove_stop_words(s) }
       end
-      
+    else
+      synonyms = []
     end
     
     Rails.logger.info('final_sym_list: ' + final_sym_list.join(', '));

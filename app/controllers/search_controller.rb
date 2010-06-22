@@ -96,6 +96,10 @@ class SearchController < ApplicationController
       parse_config_options[:add_title] = true
     end
     
+    if @limitModality == 'lm'
+      parse_config_options[:limit_modality] = true
+    end
+    
     # umls?
     if @umls == 'umSy'
       parse_config_options[:umls_synonym_expansion] = true
@@ -117,6 +121,9 @@ class SearchController < ApplicationController
       parse_config_options[:stem_and_star]= true
     end
     
+    @opts = parse_config_options
+    
+    
     ##### output mode:
     ##### we can output results as either standard web view or as a TREC-formatted run file
     # possible values: 'trec' (trec-formatted output), 'std' (standard interactive output)
@@ -133,7 +140,7 @@ class SearchController < ApplicationController
       case @uploadOption
       when 'singleQ' # use @query_str
         topic_number = params[:topicNo]
-        @results = run_query(@query_str, parse_config_options)
+        @results, @mod_list, @syn_list = run_query(@query_str, parse_config_options)
         out = gen_trec(@results, topic_number, run_name)
       when 'uplF' # get queries from the uploaded file
         # TODO: error handling here- what if user didn't uplaod a query file?
@@ -141,13 +148,13 @@ class SearchController < ApplicationController
         out = ''
         queries.each_index do |i| 
           queryNumber = i + 1
-          temp_results = run_query(queries[i], parse_config_options)
+          temp_results, mod, syn = run_query(queries[i], parse_config_options)
           out << gen_trec(temp_results, topic_number, run_name)
         end
       end
       render :text => out
     else # standard mode, just render the template
-      @results = run_query(@query_str, parse_config_options)
+      @results, @mod_list, @syn_list = run_query(@query_str, parse_config_options)
       render :action => "search"
     end
         
@@ -167,7 +174,7 @@ class SearchController < ApplicationController
     Rails.logger.info("full_query: #{full_query}")
     Rails.logger.info("modalities are: #{modalities.join(', ')}")
     Rails.logger.info("synonyms are: #{synonyms.join(', ')}")
-    return Record.find_by_sql(full_query)
+    return Record.find_by_sql(full_query), modalities, synonyms
     
   end
   
