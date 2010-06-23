@@ -196,11 +196,8 @@ class SearchController < ApplicationController
     
   end
   
-  def gen_trec(results, topic_number, run_name, include_header = true)
+  def gen_trec(results, topic_number, run_name)
     to_return = []
-    if include_header
-      to_return << "#{topic_number} \t 1 \t 1234 \t 1 \t 0 \t#{run_name}\n"
-    end
     
     results.each_index do  |r|
       rank = r + 1
