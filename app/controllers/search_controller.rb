@@ -41,6 +41,7 @@ class SearchController < ApplicationController
     
     ######### query parsing parameters: ############
     @limitModality=(params['limitModality']) # do we try and guess the modality from the query?
+    @modColumn = params[:mod_column] # which modality column to use? allowed vals: :title, :caption, :caption_title, :jaykc, :all
     @umlsSynonym=(params['umlsSynonym']) # use UMLS query expansion?
     @columnOp=(params['columnOp']) # which caption column to use?
     @titleOp=(params['titleOp']) # include titles, or just captions?
@@ -48,6 +49,7 @@ class SearchController < ApplicationController
     @stem_and_star = params[:stem_and_star] # stem and wildcard query terms?
     @unique = params[:unique_term] # only include unique terms after stemming/expansion?
     @parse_mode = params[:parseMode]
+    
       
     # include mesh?
     @inc_mm_mh = params[:mm_mh]
@@ -98,6 +100,22 @@ class SearchController < ApplicationController
     
     if @limitModality == 'lm'
       parse_config_options[:limit_modality] = true
+    end
+    
+    #which modality column to use? allowed vals: :title, :caption, :caption_title, :jaykc, :all
+    parse_config_options[:mod_column] = case @modColumn
+    when 'title'
+      :title
+    when 'caption'
+      :caption
+    when 'caption_title'
+      :caption_title
+    when 'jaykc'
+      :jaykc
+    when 'all'
+      :all
+    else
+      :caption
     end
     
     # umls?
