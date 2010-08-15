@@ -29,7 +29,7 @@ class ModTagger
 		  mr.each do |m|   
         mR=regExCreate(m)	
 		  	if caption =~mR
-          mod='MRI'
+          mod='MR'
            modality << mod
 			   end
 		  end  
@@ -52,7 +52,7 @@ class ModTagger
 		   graphic.each do |g|   
           gr=regExCreate(g)
           if caption =~gr
-            mod='graphic'
+            mod='GX'
             modality << mod
            end    
 		   end   
@@ -60,7 +60,7 @@ class ModTagger
 		   xray.each do |x|   
 			  xr=regExCreate(x)
 			  if caption =~xr
-           mod='X-ray'
+           mod='XR'
            modality << mod
 			   end    
 		   end   
@@ -68,7 +68,7 @@ class ModTagger
 		  nuc.each do |n|   
           nm=regExCreate(n)
           if caption =~nm
-              mod='nuc med'
+              mod='NM'
               modality << mod
           end    
 		   end   
@@ -77,7 +77,7 @@ class ModTagger
 		  photo.each do |p|   
         ph=regExCreate(p)
           if caption =~ph
-             mod='photo'
+             mod='PX'
              modality << mod
          end    
 		   end   
@@ -86,7 +86,7 @@ class ModTagger
       micro.each do |m|  
         mic=regExCreate(m)
         if caption =~mic
-            mod='micro'
+            mod='MX'
             modality << mod
         end    
       end
@@ -94,7 +94,7 @@ class ModTagger
 		  endo.each do |e|  
 		   endsc=regExCreate(e)
 			if caption =~endsc
-				mod='endoscopy'
+				mod='EN'
 				modality << mod
 			end       
 		end

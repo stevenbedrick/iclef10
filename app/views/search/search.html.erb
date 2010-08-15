@@ -35,6 +35,7 @@
 Found <%= pluralize(@results.size, 'result') %>. (<%= link_to 'New search', :action => :index %>)<br/>
 <a href="#" id="detail_link">details</a>
 <div id="query_details">
+  Orig. Query: <%= h @query_str %><br/>
   Modalities: <%= @mod_list.join(', ') %><br/>
   Synonyms: <%= @syn_list.join(', ') %><br/>
   Parsing Options:

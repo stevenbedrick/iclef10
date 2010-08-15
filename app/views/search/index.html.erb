@@ -38,12 +38,22 @@
 
         });
         
+        $('input[name=uploadFile]').click(function() {
+          
+          if (this.value == 'uplF') {
+            $('input[name=uf_format]').removeAttr('disabled');
+          } else {
+            $('input[name=uf_format]').attr('disabled','disabled');            
+          }
+          
+        });
+        
         $('input[name=pm_mh]').click(function() {
           // disable the custom pubmed mesh heading controls unless pm_mh is checked:
           var disabledVal = true;
           if ($('input[name=pm_mh]').is(':checked')) {
             
-            $('#major_opts').removeClass('disabled')
+            $('#major_opts').removeClass('disabled');
             $('#major_opts').children('input').removeAttr('disabled');
             $('#pm_major_t').attr('checked',true);
             
@@ -51,6 +61,22 @@
             $('#major_opts').addClass('disabled');
             $('#major_opts').children('input').attr('disabled','disabled');
           }
+          $('#major_opts').toggle();
+        });
+        
+        $('#custom_lm').click(function() {
+          // disable modality column choices
+          if ($('#custom_lm').is(':checked')) {
+            // show:
+            $('#modality_options').removeClass('disabled');
+            $('#modality_options').children('input').removeAttr('disabled');
+            $('#mod_col_caption').attr('checked',true);
+          } else {
+            // disable and hide:
+            $('#modality_options').addClass('disabled');
+            $('#major_opts').children('input').attr('disabled','disabled');
+          }
+          $('#modality_options').toggle();
         });
 
 
@@ -91,11 +117,19 @@
         function enableCustomTrec() {
         $('#trecOptions').removeClass('disabled');
         $('#trecOptions').children('input').removeAttr('disabled');
+        
+        
+        
       }
 
       function disableCustomTrec() {
         $('#trecOptions').addClass('disabled');
         $('#trecOptions').children('input').attr('disabled','disabled');
+        
+        $('input[name=uploadFile]').removeAttr('checked');
+        $('#upload_file_options').addClass('disabled');
+        $('#upload_file_options').children('input').attr('disabled','disabled');
+        
       }
 
 
@@ -112,7 +146,7 @@
     
     <style type="text/css" media="screen">
       form { margin-top: 3em; }
-      div#major_opts {
+      div#major_opts, div#modality_options, div#trecOptions, div.option {
         margin-left: 2em;
       }
     </style>
@@ -152,7 +186,7 @@
         <div id="mh_opts" class="option">
           <input type="checkbox" name="mm_mh" value="t" id="mm_mh"/><label for="mm_mh">Include MetaMap-derived MeSH terms?</label><br/>
           <input type="checkbox" name="pm_mh" value="t" id="pm_mh"/><label for="pm_mh">Include PubMed MeSH terms?</label>
-          <div id="major_opts" class="option disabled">
+          <div id="major_opts" class="option disabled" style="display: none;">
             <input type="radio" name="pm_major" value="t" id="pm_major_t" disabled="disabled"><label for="pm_major_t">Restrict to major topics</label><br/>
             <input type="radio" name="pm_major" value="f" id="pm_major_f" disabled="disabled"><label for="pm_major_f">Use all MeSH terms</label>
           </div>
@@ -168,6 +202,14 @@
         </div>
         <div id="customOptions" class="option disabled">
           <input type="checkbox" name="limitModality" value="lm" disabled="true" id="custom_lm" checked="true" /> <label for="custom_lm">Modality</label><br/>
+          <div id="modality_options" class="option disabled">
+            <input type="checkbox" name="reorder" value="t" id="mod_reorder" checked="true"/><label for="mod_reorder">Add extra non-modality-appropriate results at end?</label><br/>
+            <input type="radio" name="mod_column" value="caption" id="mod_col_caption" checked="true"/><label for="mod_col_caption">Caption</label><br/>
+            <input type="radio" name="mod_column" value="title" id="mod_col_title"/><label for="mod_col_caption">Title</label><br/>
+            <input type="radio" name="mod_column" value="caption_title" id="mod_col_caption_title"/><label for="mod_col_caption">Caption + Title</label><br/>
+            <input type="radio" name="mod_column" value="jaykc" id="mod_col_jaykc"/><label for="mod_col_caption">Jayashree-assigned</label><br/>
+            <input type="radio" name="mod_column" value="all" id="mod_col_all"/><label for="mod_col_all">All</label><br/>
+          </div>
           <input type="checkbox" name="umlsSynonym" value="umSy" disabled="true" id="custom_umSy" /> <label for="custom_umSy">UMLS Term synonym</label><br/>
           <input type="checkbox" name="stem_and_star" value="stem" disabled="true" id="custom_stemStar" /> <label for="custom_stemStar">Stem and Star</label><br/>
           <input type="checkbox" name="unique_term" value="stem" disabled="true" id="custom_unique" /> <label for="custom_unique">Unique search terms</label>
@@ -176,12 +218,23 @@
           Search Output:<br/>
           <input type="radio" name="outOp" value="std" id="std" checked="true" /> <label for="std">Standard output</label><br/>
           <input type="radio" name="outOp" value="trec" id="trec" /> <label for="trec">Trec_eval Format</label><br/>
+
           <div id="trecOptions" class="option disabled">
+
             Run Name: <input type="text" name="topicSetName" size="16"><br/>
-            <input type="radio" name="uploadFile" value="uplF" disabled="true" id="uplF" /> <label for="uplF">Upload File (one query per line):</label><br/>
+
+            <input type="radio" name="uploadFile" value="uplF" disabled="true" id="uplF" /> <label for="uplF">Upload File</label>
+
+            <div id="upload_file_options" class="option disabled"> 
+              <input type="radio" name="uf_format" value="simple" disabled="true" id="uf_format_simple"/><label for="uf_format_simple">One line per file</label><br/>
+              <input type="radio" name="uf_format" value="xml" disabled="true" id="uf_format_xml"/><label for="uf_format_xml">XML</label>
+            </div>
+            
             <label for="file">File to Upload</label> <%= file_field_tag "file" %><br/>
+
             <input type="radio" name="uploadFile" value="singleQ" disabled="true" id="singleQ" /> <label for="singleQ">Single Query</label><br/>
             Topic number:<input type="text" name="topicNo" size="4" /><br/>
+
           </div>
         </div>
       </div>

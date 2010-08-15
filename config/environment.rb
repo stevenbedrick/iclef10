@@ -23,8 +23,12 @@ Rails::Initializer.run do |config|
 #  config.gem 'ferret' # even though we're not using it for searching, it's still helpful for stop-word removal
 #  require 'lib/umls'
   config.gem 'nokogiri'
+#  config.gem 'text'
   require 'lib/tagger'
   TAGGER = Tagger.new
+
+  # load up the corpus for suggestions:
+  SUGGESTION_CORPUS = open('misc/fixed_tsvec.out').readlines.collect { |l| l.split('|')[0].strip };
 
   # Only load the plugins named here, in the order given (default is alphabetical).
   # :all can be used as a placeholder for all plugins not explicitly named

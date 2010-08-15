@@ -14,6 +14,8 @@ class QueryParser
     config_options = {
       :parse_mode => :simple_or,
       :limit_modality => false,
+      :remove_mod_tokens => true,
+      :mod_column => 'caption_modality',
       :umls_synonym_expansion => false,
       :column_to_use => 'parsed_caption',
       :stem_and_star => false,
@@ -28,6 +30,7 @@ class QueryParser
 
     modalities = []
     synonyms = []
+    q_tokens = []
 
     Rails.logger.info "config_options[:parse_mode]: #{config_options[:parse_mode]}"
 
@@ -44,7 +47,7 @@ class QueryParser
 #      when :fuzzy_or
 #        q = fuzzy_or(query)
       when :custom
-        q, modalities, synonyms = custom(query, config_options)
+        q, modalities, synonyms, q_tokens = custom(query, config_options)
 # => sdb_custom_parser is not working at the moment
 #      when :sdb
 #        q, modalities, synonyms = sdb_custom_parser(query, config_options)
@@ -84,21 +87,36 @@ class QueryParser
 
     mod_limit = ''
     if config_options[:limit_modality] and not modalities.empty?
-      # wrap in single-quotes:
-      wrapped_modalities = modalities.select { |m| not m.strip.empty? }.collect { |m| sql_escape(m) }.collect { |m| "'#{m}'"}
-      mod_limit = "and text_modality in (#{wrapped_modalities.join(', ')})"      
+
+      adj_mod = modalities.select { |m| not m.strip.empty? }.join(' | ')
+      
+      # which cols?
+      mod_col = case config_options[:mod_column]  
+      when :title
+        'title_modality'
+      when :caption_title
+        "caption_modality || ' ' || title_modality"
+      when :jaykc
+        'jaykc_modality'
+      when :all
+        "caption_modality || ' ' || title_modality || ' ' || jaykc_modality"
+      else
+        "caption_modality"
+      end
+      
+      mod_limit = "and to_tsvector('english',#{mod_col}) @@ to_tsquery('english','#{adj_mod}') "      
     end
     
     full_query = "select r.*, #{rank_str} as rank from records r where #{query_str} "
     if not mod_limit.blank?
       full_query << mod_limit
     end
-    full_query << "order by rank desc"
+    full_query << " order by rank desc"
     
         
 #    full_query = query_parts.join(' ')
     
-    return full_query, modalities, synonyms, q
+    return full_query, modalities, synonyms, q_tokens, q
 
   end
 
@@ -242,7 +260,7 @@ class QueryParser
     query_tokens = []
     
 
-    if options[:limit_modality]
+    if options[:limit_modality] or options[:remove_mod_tokens]
       # remove modality tokens from query- we'll handle those separately
       stop_word_removed_tokens.each do |thisTerm|
         if  ModTagger.modExtractor(thisTerm).size == 0  ## this term is not a modality
@@ -323,14 +341,14 @@ class QueryParser
     
 #    temp_query = {:tokens => query_tokens, :concat => '|'}
     
-    return temp_query, modalities, synonyms
+    return temp_query, modalities, synonyms, query_tokens
 
   end # ends custom parsing
 
   def remove_stop_words(str,join=true)
 
     stop_words = Ferret::Analysis::ENGLISH_STOP_WORDS
-    new_stop_words = ['including', 'show', 'me' ,'images' ,'cases','containing', 'showing', 'with', 'one', 'more', 'several', 'entire','full-body', 'colored', 'all', 'modalities'] # added jkc
+    new_stop_words = ['including', 'show', 'me', 'image','images' ,'cases','containing', 'showing', 'with', 'one', 'more', 'several', 'entire','full-body', 'colored', 'all', 'modalities'] # added jkc
     new_stop_words << 'scan' # added sdb
     final_stop_words = stop_words + new_stop_words
 
