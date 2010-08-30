@@ -64,19 +64,19 @@ class QueryParser
     # figure out cols:
     col = config_options[:column_to_use]
     if config_options[:add_title]
-      col = col + ' || title'
+      col = col + " || ' ' || title"
     end
     
     if config_options[:pubmed_mh] 
       if config_options[:pubmed_mh_major]
-        col = col + ' || pubmed_mh_major'
+        col = col + " ||  ' ' || pubmed_mh_major"
       else
-        col = col + ' || pubmed_mh'
+        col = col + " ||  ' ' || pubmed_mh"
       end
     end
     
     if config_options[:metamap_mh]
-      col = col + ' || metamap_mh'
+      col = col + " ||  ' ' || metamap_mh"
     end
     
 

@@ -1,7 +1,5 @@
-class AddlRecordIdx < ActiveRecord::Migration
+class TempIdx < ActiveRecord::Migration
   def self.up
-
-    # caption + title
     execute "CREATE INDEX record_caption_title_idx ON records USING gin(to_tsvector('english', caption || ' ' || title));"
     ["caption || ' ' || pubmed_mh",
     "caption || ' ' ||  pubmed_mh_major",
@@ -15,8 +13,8 @@ class AddlRecordIdx < ActiveRecord::Migration
     "caption || ' ' ||  title || ' ' ||  pubmed_mh_major || ' ' ||  metamap_mh"].each do |c|
       puts "working on: #{c}"
       execute "CREATE INDEX record_#{c.split("|| ' ' ||").map(&:strip).join('_')}_idx ON records USING gin(to_tsvector('english', #{c}));"
-
-
+    end    
+    
   end
 
   def self.down
