@@ -24,7 +24,7 @@ Rails::Initializer.run do |config|
 #  require 'lib/umls'
   config.gem 'nokogiri'
 #  config.gem 'text'
-  require 'lib/tagger'
+  require './lib/tagger'
   TAGGER = Tagger.new
 
   # load up the corpus for suggestions:
